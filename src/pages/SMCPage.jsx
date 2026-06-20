@@ -216,7 +216,11 @@ export default function SMCPage() {
     let htfC = null, ltfC = null, src = "Simulated";
 
     try {
-      const proxy = "https://corsproxy.io/?";
+      // corsproxy.io now requires the target URL to be passed as a `url=`
+      // query param. The previous "append straight after ?" format is
+      // deprecated and corsproxy.io rejects/mangles it, which made every
+      // request silently fail and fall through to the mock generator below.
+      const proxy = "https://corsproxy.io/?url=";
       const enc = (u) => proxy + encodeURIComponent(u);
       const base = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
@@ -224,7 +228,17 @@ export default function SMCPage() {
         fetch(enc(`${base}${sym.yf}?interval=${htfTf.yf}&range=${htfTf.range}`), { signal: AbortSignal.timeout(5000) }),
         fetch(enc(`${base}${sym.yf}?interval=${ltfTf.yf}&range=${ltfTf.range}`), { signal: AbortSignal.timeout(5000) }),
       ]);
+
+      if (!hr.ok || !lr.ok) {
+        throw new Error(`Proxy/Yahoo responded ${hr.status}/${lr.status}`);
+      }
+
       const [hd, ld] = await Promise.all([hr.json(), lr.json()]);
+
+      // Yahoo can return HTTP 200 with an error envelope (e.g. an expired/
+      // missing "crumb" token) — catch that case explicitly too.
+      const apiErr = hd?.chart?.error || ld?.chart?.error;
+      if (apiErr) throw new Error(apiErr.description || "Yahoo chart API error");
 
       const parse = (d) => {
         const r = d?.chart?.result?.[0];
@@ -241,7 +255,11 @@ export default function SMCPage() {
         ltfC = l;
         src = "Yahoo Finance";
       }
-    } catch {}
+    } catch (err) {
+      // Surface the real reason in devtools instead of silently switching
+      // to simulated data with no trace of why.
+      console.warn("[SMC] Live data fetch failed, falling back to simulated candles:", err?.message || err);
+    }
 
     if (!htfC) {
       // Use same seed so HTF and LTF follow same price path
