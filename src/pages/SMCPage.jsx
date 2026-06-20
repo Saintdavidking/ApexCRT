@@ -13,7 +13,7 @@ const SMC_REFS = [
   { label: "Bullish OB",      color: G.blue,   desc: "Last bearish candle before a bullish impulsive move — expect price to retest for continuation." },
   { label: "Bearish OB",      color: G.red,    desc: "Last bullish candle before bearish expansion — look for rejection and short entries on retests." },
   { label: "BOS",             color: G.green,  desc: "Break of Structure — a swing high/low broken with a close, confirming the current trend direction." },
-  { label: "CHoCH",           color: G.accent, desc: "Change of Character — the first structural break against trend, signalling a possible reversal." },
+  { label: "RED",           color: G.accent, desc: "Change of Character — the first structural break against trend, signalling a possible reversal." },
   { label: "FVG / Imbalance", color: G.purple, desc: "Three-candle gap where price moved impulsively — fills are common before trend continuation." },
   { label: "Liquidity Pool",  color: G.accent, desc: "Clusters of stop orders above swing highs (BSL) or below swing lows (SSL) — prime sweep targets." },
 ];
@@ -240,7 +240,10 @@ export default function SMCPage() {
     }
 
     await new Promise(r => setTimeout(r, 380));
-    setAnalysis(runCRTAnalysis(htfC, ltfC, sym));
+    
+    // ── FIX: Pass current price from LTF to sync entry/SL/TP with chart ──
+    const currentPrice = ltfC && ltfC.length > 0 ? ltfC[ltfC.length - 1].close : null;
+    setAnalysis(runCRTAnalysis(htfC, ltfC, sym, currentPrice));
     setDataSource(src);
     setLoading(false);
   }, [sym, htfTf, ltfTf]);
