@@ -92,7 +92,10 @@ export default function CRTPage() {
     }
 
     await new Promise(r => setTimeout(r, 380));
-    setAnalysis(runCRTAnalysis(htfC, ltfC, sym));
+    
+    // ── FIX: Pass current price from LTF to sync entry/SL/TP with chart ──
+    const currentPrice = ltfC && ltfC.length > 0 ? ltfC[ltfC.length - 1].close : null;
+    setAnalysis(runCRTAnalysis(htfC, ltfC, sym, currentPrice));
     setDataSource(src);
     setLoading(false);
   }, [sym, htfTf, ltfTf]);
