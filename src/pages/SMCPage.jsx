@@ -235,13 +235,16 @@ export default function SMCPage() {
     } catch {}
 
     if (!htfC) {
-      htfC = generateCandles(sym.base, sym.vol,       30, sym.value.charCodeAt(0));
-      ltfC = generateCandles(sym.base, sym.vol * 0.3, 50, sym.value.charCodeAt(1));
+      // ── FIX: Use same seed so HTF and LTF follow same price path ──
+      const commonSeed = sym.value.charCodeAt(0);
+      htfC = generateCandles(sym.base, sym.vol,       30, commonSeed);
+      ltfC = generateCandles(sym.base, sym.vol * 0.3, 50, commonSeed);
+      //                                                     ^^^^^^^^^^ SAME SEED
     }
 
     await new Promise(r => setTimeout(r, 380));
     
-    // ── FIX: Pass current price from LTF to sync entry/SL/TP with chart ──
+    // Pass current price from LTF to sync entry/SL/TP with chart
     const currentPrice = ltfC && ltfC.length > 0 ? ltfC[ltfC.length - 1].close : null;
     setAnalysis(runCRTAnalysis(htfC, ltfC, sym, currentPrice));
     setDataSource(src);
